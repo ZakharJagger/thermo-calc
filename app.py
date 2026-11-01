@@ -1,6 +1,4 @@
 import streamlit as st
-import numpy as np
-import plotly.graph_objects as go
 from datetime import datetime
 import physics
 
@@ -83,7 +81,7 @@ st.title("🌡️ Интерактивный калькулятор по тер�
 st.caption("Учебный проект · Python + Streamlit")
 
 tab1, tab2, tab3, tab4 = st.tabs([
-    "pV = νRT", "Первое начало", "КПД", "Графики"
+    "pV = νRT", "Первое начало", "КПД", "Справочник"
 ])
 
 # ============================================================
@@ -119,7 +117,6 @@ with tab1:
         try:
             if p1 == 0:
                 p = physics.ideal_gas_pressure(nu1, T1, V1)
-                # Переводим в выбранную единицу давления
                 p_out = p / PRESSURE_UNITS[p1_unit]
                 result = f"p = {p_out:.3f} {p1_unit}"
                 st.success(f"**{result}**")
@@ -128,7 +125,6 @@ with tab1:
 
             elif V1 == 0:
                 V = physics.ideal_gas_volume(nu1, T1, p1)
-                # Переводим в выбранную единицу объёма
                 V_out = V / VOLUME_UNITS[V1_unit]
                 result = f"V = {V_out:.3f} {V1_unit}"
                 st.success(f"**{result}**")
@@ -137,7 +133,6 @@ with tab1:
 
             elif T1 == 0:
                 T = physics.ideal_gas_temperature(p1, V1, nu1)
-                # Переводим в выбранную единицу температуры
                 T_out = T - 273.15 if T1_unit == "°C" else T
                 result = f"T = {T_out:.2f} {T1_unit}"
                 st.success(f"**{result}**")
@@ -292,87 +287,68 @@ with tab3:
                 st.error(f"Ошибка: {e}")
 
 # ============================================================
-# ВКЛАДКА 4 — Графики
+# ВКЛАДКА 4 — Справочник и Проверка
 # ============================================================
 with tab4:
-    st.subheader("Графики изопроцессов")
-    st.latex(r"pV = \nu R T")
+    st.subheader("Справочник и проверка")
 
-    process = st.selectbox("Выберите процесс:",
-                           ["Изотерма (p–V)", "Изобара (V–T)", "Изохора (p–T)", "Цикл Карно (p–V)"],
-                           key="graph_process")
+    mode4 = st.radio("Выберите режим:", ["📖 Справочник формул", "✅ Проверка ответа"], horizontal=True, key="tab4_mode")
 
-    if process == "Изотерма (p–V)":
-        col1, col2 = st.columns(2)
-        with col1:
-            nu_g = st.number_input("ν, моль", min_value=0.01, value=1.0, step=0.1, key="g_nu1")
-            T_g = st.number_input("T, К", min_value=1.0, value=300.0, step=1.0, key="g_T1")
-        with col2:
-            Vmin, Vmax = st.slider("Диапазон V, л", 1.0, 100.0, (5.0, 50.0), key="g_V1")
-        V = np.linspace(Vmin / 1000, Vmax / 1000, 200)
-        p = nu_g * 8.314 * T_g / V
-        fig = go.Figure(go.Scatter(x=V * 1000, y=p / 1000, mode="lines", line=dict(width=3, color="#0b5394")))
-        fig.update_layout(title=f"Изотерма: T = {T_g} К", xaxis_title="V, л", yaxis_title="p, кПа",
-                          template="plotly_white", height=450)
-        st.plotly_chart(fig, use_container_width=True)
+    if mode4 == "📖 Справочник формул":
+        st.write("Выберите нужный раздел, чтобы вспомнить формулу:")
 
-    elif process == "Изобара (V–T)":
-        col1, col2 = st.columns(2)
-        with col1:
-            nu_g = st.number_input("ν, моль", min_value=0.01, value=1.0, step=0.1, key="g_nu2")
-            p_g = st.number_input("p, Па", min_value=100.0, value=101325.0, step=100.0, key="g_p2")
-        with col2:
-            Tmin, Tmax = st.slider("Диапазон T, К", 100, 1000, (200, 600), key="g_T2")
-        T = np.linspace(Tmin, Tmax, 200)
-        V = nu_g * 8.314 * T / p_g
-        fig = go.Figure(go.Scatter(x=T, y=V * 1000, mode="lines", line=dict(width=3, color="#0b5394")))
-        fig.update_layout(title=f"Изобара: p = {p_g / 1000:.1f} кПа", xaxis_title="T, К", yaxis_title="V, л",
-                          template="plotly_white", height=450)
-        st.plotly_chart(fig, use_container_width=True)
+        with st.expander("1. Уравнение Менделеева-Клапейрона"):
+            st.latex(r"pV = \nu R T")
+            st.write("Связывает давление, объём и температуру идеального газа.")
 
-    elif process == "Изохора (p–T)":
-        col1, col2 = st.columns(2)
-        with col1:
-            nu_g = st.number_input("ν, моль", min_value=0.01, value=1.0, step=0.1, key="g_nu3")
-            V_g = st.number_input("V, л", min_value=0.1, value=20.0, step=0.1, key="g_V3")
-        with col2:
-            Tmin, Tmax = st.slider("Диапазон T, К", 100, 1000, (200, 600), key="g_T3")
-        T = np.linspace(Tmin, Tmax, 200)
-        p = nu_g * 8.314 * T / (V_g / 1000)
-        fig = go.Figure(go.Scatter(x=T, y=p / 1000, mode="lines", line=dict(width=3, color="#0b5394")))
-        fig.update_layout(title=f"Изохора: V = {V_g:.1f} л", xaxis_title="T, К", yaxis_title="p, кПа",
-                          template="plotly_white", height=450)
-        st.plotly_chart(fig, use_container_width=True)
+        with st.expander("2. Первое начало термодинамики"):
+            st.latex(r"Q = \Delta U + A")
+            st.write(
+                "Количество теплоты, переданное газу, идёт на изменение его внутренней энергии и работу против внешних сил.")
+
+        with st.expander("3. Внутренняя энергия идеального газа"):
+            st.latex(r"\Delta U = \frac{i}{2}\,\nu R\,\Delta T")
+            st.write(
+                "Зависит только от изменения температуры. i — число степеней свободы (3 для одноатомного, 5 для двухатомного).")
+
+        with st.expander("4. Работа газа"):
+            st.write("**Изобарный процесс (p = const):**")
+            st.latex(r"A = p\,\Delta V")
+            st.write("**Изотермический процесс (T = const):**")
+            st.latex(r"A = \nu R T \ln\frac{V_2}{V_1}")
+
+        with st.expander("5. КПД теплового двигателя"):
+            st.latex(r"\eta = \frac{Q_1 - Q_2}{Q_1} = \frac{A}{Q_1}")
+            st.write("Отношение полезной работы к затраченной энергии.")
+
+        with st.expander("6. КПД цикла Карно (идеальная машина)"):
+            st.latex(r"\eta = 1 - \frac{T_2}{T_1}")
+            st.write("Максимально возможный КПД для данных температур нагревателя (T₁) и холодильника (T₂).")
 
     else:
-        col1, col2 = st.columns(2)
+        st.write("Решите задачу на бумаге, введите свой ответ, и калькулятор проверит его.")
+        st.info("Пример: найдите давление 1 моль газа при 273 К и объёме 22.4 л. Введите ответ в кПа.")
+
+        col1, col2, col3 = st.columns(3)
         with col1:
-            nu_g = st.number_input("ν, моль", min_value=0.01, value=1.0, step=0.1, key="g_nu4")
-            T1 = st.number_input("T₁ (нагреватель), К", min_value=1.0, value=600.0, step=1.0, key="g_T1c")
+            nu_ch = st.number_input("ν, моль", min_value=0.0, value=1.0, step=0.1, key="ch_nu")
         with col2:
-            T2 = st.number_input("T₂ (холодильник), К", min_value=1.0, value=300.0, step=1.0, key="g_T2c")
-            r = st.slider("Степень сжатия V₁/V₂", 1.5, 5.0, 2.0, step=0.1, key="g_r")
-        if T2 >= T1:
-            st.error("Нужно T₁ > T₂.")
-        else:
-            V1, V2, gamma = 0.02, 0.02 / r, 1.4
-            V3 = V2 * (T1 / T2) ** (1 / (gamma - 1))
-            V4 = V1 * (T1 / T2) ** (1 / (gamma - 1))
-            Va, Vb, Vc, Vd = np.linspace(V4, V1, 60), np.linspace(V1, V2, 60), np.linspace(V2, V3, 60), np.linspace(V3,
-                                                                                                                    V4,
-                                                                                                                    60)
-            pa = nu_g * 8.314 * T1 / Va
-            pb = nu_g * 8.314 * T1 / V1 * (V1 / Vb) ** gamma
-            pc = nu_g * 8.314 * T2 / Vc
-            pd = nu_g * 8.314 * T2 / V3 * (V3 / Vd) ** gamma
-            fig = go.Figure(
-                go.Scatter(x=np.concatenate([Va, Vb, Vc, Vd]) * 1000, y=np.concatenate([pa, pb, pc, pd]) / 1000,
-                           mode="lines", line=dict(width=3, color="#0b5394"), fill="toself",
-                           fillcolor="rgba(11,83,148,0.15)"))
-            fig.update_layout(title=f"Цикл Карно (T₁ = {T1} К, T₂ = {T2} К)", xaxis_title="V, л", yaxis_title="p, кПа",
-                              template="plotly_white", height=500)
-            st.plotly_chart(fig, use_container_width=True)
-            st.info(f"КПД цикла: **η = {(1 - T2 / T1) * 100:.1f} %**")
+            T_ch = st.number_input("T, К", min_value=0.0, value=273.0, step=1.0, key="ch_T")
+        with col3:
+            V_ch = st.number_input("V, л", min_value=0.0, value=22.4, step=0.1, key="ch_V")
+
+        user_answer = st.number_input("Ваш ответ: p, кПа", value=0.0, step=1.0, key="ch_ans")
+
+        if st.button("Проверить ответ", key="btn_check"):
+            # Считаем правильный ответ в кПа
+            p_pa = physics.ideal_gas_pressure(nu_ch, T_ch, V_ch / 1000)
+            p_kpa = p_pa / 1000
+
+            # Сравниваем с погрешностью 1% (на случай погрешности округления)
+            if abs(user_answer - p_kpa) <= p_kpa * 0.01:
+                st.success(f"✅ **Верно!** Правильный ответ: {p_kpa:.2f} кПа")
+            else:
+                st.error(f"❌ **Ошибка.** Правильный ответ: {p_kpa:.2f} кПа")
 
 # ============================================================
 # История и подвал
@@ -383,9 +359,13 @@ if st.session_state.get("history"):
             st.write(f"{i}. {item}")
         col1, col2 = st.columns(2)
         with col1:
-            st.download_button("📥 Скачать всю историю", data="\n".join(st.session_state.history),
-                               file_name=f"history_{datetime.now().strftime('%Y%m%d')}.txt", mime="text/plain",
-                               key="dl_all")
+            st.download_button(
+                "📥 Скачать всю историю",
+                data="\n".join(st.session_state.history),
+                file_name=f"history_{datetime.now().strftime('%Y%m%d')}.txt",
+                mime="text/plain",
+                key="dl_all"
+            )
         with col2:
             if st.button("🗑️ Очистить историю", key="clear_hist"):
                 st.session_state.history = []
