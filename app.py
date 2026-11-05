@@ -144,6 +144,47 @@ with tab1:
         except ValueError as e:
             st.error(f"Ошибка: {e}")
 
+    # --- Блок оценки погрешности ---
+    st.divider()
+    st.subheader("Оценка погрешности (для лабораторных)")
+    st.write("Введите абсолютные погрешности измерений (например, цену деления прибора):")
+
+    col_err1, col_err2, col_err3 = st.columns(3)
+    with col_err1:
+        d_nu = st.number_input("Δν, моль", min_value=0.0, value=0.05, step=0.01, key="d_nu")
+    with col_err2:
+        d_T = st.number_input("ΔT, К", min_value=0.0, value=1.0, step=0.1, key="d_T")
+    with col_err3:
+        d_V = st.number_input("ΔV, м³", min_value=0.0, value=0.001, step=0.0001, format="%.4f", key="d_V")
+
+    if st.button("Рассчитать p с погрешностью", key="btn_p_err"):
+        try:
+            if V1 == 0:
+                st.warning("Для расчёта погрешности давления заполните поле V.")
+            else:
+                p = physics.ideal_gas_pressure(nu1, T1, V1)
+
+                rel_err_nu = d_nu / nu1 if nu1 > 0 else 0
+                rel_err_T = d_T / T1 if T1 > 0 else 0
+                rel_err_V = d_V / V1 if V1 > 0 else 0
+
+                total_rel_err = rel_err_nu + rel_err_T + rel_err_V
+                abs_err = p * total_rel_err
+
+                p_kpa = p / 1000
+                abs_err_kpa = abs_err / 1000
+
+                result = f"p = ({p_kpa:.1f} ± {abs_err_kpa:.1f}) кПа (отн. погрешность: {total_rel_err * 100:.1f} %)"
+                st.success(f"**{result}**")
+
+                add_history("p (с погрешностью)", result)
+                show_download("Давление с погрешностью",
+                              {"ν": nu1, "T": T1, "V": V1, "Δν": d_nu, "ΔT": d_T, "ΔV": d_V},
+                              result, "dl_p_err")
+
+        except ValueError as e:
+            st.error(f"Ошибка: {e}")
+
 # ============================================================
 # ВКЛАДКА 2 — Первое начало термодинамики
 # ============================================================
@@ -287,68 +328,39 @@ with tab3:
                 st.error(f"Ошибка: {e}")
 
 # ============================================================
-# ВКЛАДКА 4 — Справочник и Проверка
+# ВКЛАДКА 4 — Справочник формул
 # ============================================================
 with tab4:
-    st.subheader("Справочник и проверка")
+    st.subheader("Справочник формул")
+    st.write("Выберите нужный раздел, чтобы вспомнить формулу:")
 
-    mode4 = st.radio("Выберите режим:", ["📖 Справочник формул", "✅ Проверка ответа"], horizontal=True, key="tab4_mode")
+    with st.expander("1. Уравнение Менделеева-Клапейрона"):
+        st.latex(r"pV = \nu R T")
+        st.write("Связывает давление, объём и температуру идеального газа.")
 
-    if mode4 == "📖 Справочник формул":
-        st.write("Выберите нужный раздел, чтобы вспомнить формулу:")
+    with st.expander("2. Первое начало термодинамики"):
+        st.latex(r"Q = \Delta U + A")
+        st.write(
+            "Количество теплоты, переданное газу, идёт на изменение его внутренней энергии и работу против внешних сил.")
 
-        with st.expander("1. Уравнение Менделеева-Клапейрона"):
-            st.latex(r"pV = \nu R T")
-            st.write("Связывает давление, объём и температуру идеального газа.")
+    with st.expander("3. Внутренняя энергия идеального газа"):
+        st.latex(r"\Delta U = \frac{i}{2}\,\nu R\,\Delta T")
+        st.write(
+            "Зависит только от изменения температуры. i — число степеней свободы (3 для одноатомного газа, 5 для двухатомного).")
 
-        with st.expander("2. Первое начало термодинамики"):
-            st.latex(r"Q = \Delta U + A")
-            st.write(
-                "Количество теплоты, переданное газу, идёт на изменение его внутренней энергии и работу против внешних сил.")
+    with st.expander("4. Работа газа"):
+        st.write("**Изобарный процесс (p = const):**")
+        st.latex(r"A = p\,\Delta V")
+        st.write("**Изотермический процесс (T = const):**")
+        st.latex(r"A = \nu R T \ln\frac{V_2}{V_1}")
 
-        with st.expander("3. Внутренняя энергия идеального газа"):
-            st.latex(r"\Delta U = \frac{i}{2}\,\nu R\,\Delta T")
-            st.write(
-                "Зависит только от изменения температуры. i — число степеней свободы (3 для одноатомного, 5 для двухатомного).")
+    with st.expander("5. КПД теплового двигателя"):
+        st.latex(r"\eta = \frac{Q_1 - Q_2}{Q_1} = \frac{A}{Q_1}")
+        st.write("Отношение полезной работы к затраченной энергии.")
 
-        with st.expander("4. Работа газа"):
-            st.write("**Изобарный процесс (p = const):**")
-            st.latex(r"A = p\,\Delta V")
-            st.write("**Изотермический процесс (T = const):**")
-            st.latex(r"A = \nu R T \ln\frac{V_2}{V_1}")
-
-        with st.expander("5. КПД теплового двигателя"):
-            st.latex(r"\eta = \frac{Q_1 - Q_2}{Q_1} = \frac{A}{Q_1}")
-            st.write("Отношение полезной работы к затраченной энергии.")
-
-        with st.expander("6. КПД цикла Карно (идеальная машина)"):
-            st.latex(r"\eta = 1 - \frac{T_2}{T_1}")
-            st.write("Максимально возможный КПД для данных температур нагревателя (T₁) и холодильника (T₂).")
-
-    else:
-        st.write("Решите задачу на бумаге, введите свой ответ, и калькулятор проверит его.")
-        st.info("Пример: найдите давление 1 моль газа при 273 К и объёме 22.4 л. Введите ответ в кПа.")
-
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            nu_ch = st.number_input("ν, моль", min_value=0.0, value=1.0, step=0.1, key="ch_nu")
-        with col2:
-            T_ch = st.number_input("T, К", min_value=0.0, value=273.0, step=1.0, key="ch_T")
-        with col3:
-            V_ch = st.number_input("V, л", min_value=0.0, value=22.4, step=0.1, key="ch_V")
-
-        user_answer = st.number_input("Ваш ответ: p, кПа", value=0.0, step=1.0, key="ch_ans")
-
-        if st.button("Проверить ответ", key="btn_check"):
-            # Считаем правильный ответ в кПа
-            p_pa = physics.ideal_gas_pressure(nu_ch, T_ch, V_ch / 1000)
-            p_kpa = p_pa / 1000
-
-            # Сравниваем с погрешностью 1% (на случай погрешности округления)
-            if abs(user_answer - p_kpa) <= p_kpa * 0.01:
-                st.success(f"✅ **Верно!** Правильный ответ: {p_kpa:.2f} кПа")
-            else:
-                st.error(f"❌ **Ошибка.** Правильный ответ: {p_kpa:.2f} кПа")
+    with st.expander("6. КПД цикла Карно"):
+        st.latex(r"\eta = 1 - \frac{T_2}{T_1}")
+        st.write("Максимально возможный КПД для данных температур нагревателя (T₁) и холодильника (T₂).")
 
 # ============================================================
 # История и подвал
@@ -372,4 +384,5 @@ if st.session_state.get("history"):
                 st.rerun()
 
 st.divider()
+st.markdown("**Автор проекта:** Желтоножкин Захар, гр. Э-62")
 st.caption("© Учебный проект по физике · 2026")
